@@ -1,0 +1,61 @@
+---
+apiVersion: nifi.stackable.tech/v1alpha1
+kind: NifiCluster
+metadata:
+  name: simple-nifi
+spec:
+  image:
+    productVersion: 2.0.0
+  clusterConfig:
+    vectorAggregatorConfigMapName: vector-aggregator-discovery
+    authentication:
+      - authenticationClass: simple-nifi-users
+    listenerClass: external-unstable
+    sensitiveProperties:
+      keySecret: nifi-sensitive-property-keyt
+      autoGenerate: true
+    zookeeperConfigMapName: simple-nifi-znode
+  nodes:
+    podOverrides:
+      spec:
+        volumes:
+          - name: statemanagement
+            configMap:
+              name: nifi-state-management
+        containers:
+          - name: nifi
+            volumeMounts:
+              - mountPath: /stackable/nifi/conf
+                name: statemanagement
+                subPath: state-management.xml
+    configOverrides:
+      nifi.properties:
+        nifi.cluster.leader.election.implementation: KubernetesLeaderElectionManager
+        nifi.state.management.provider.cluster: kubernetes-provider
+    config:
+      logging:
+        enableVectorAgent: true
+    roleGroups:
+      default:
+        replicas: 3
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    stackable.tech/managed-by: stackablectl
+    stackable.tech/stack: logging
+    stackable.tech/vendor: Stackable
+  name: nifi-state-management
+  namespace: default
+data:
+  state-management.xml: |
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <stateManagement>
+      <cluster-provider>
+        <id>kubernetes-provider</id>
+        <class>org.apache.nifi.kubernetes.state.provider.KubernetesConfigMapStateProvider</class>
+        <property name="simple-nifi"></property>
+      </cluster-provider>
+      </cluster-provider>
+    </stateManagement>

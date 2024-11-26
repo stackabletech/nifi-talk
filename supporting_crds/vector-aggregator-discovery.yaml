@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  ADDRESS: vector-aggregator.logging.svc.cluster.local:6000
+kind: ConfigMap
+metadata:
+  labels:
+    stackable.tech/managed-by: stackablectl
+    stackable.tech/stack: logging
+    stackable.tech/vendor: Stackable
+  name: vector-aggregator-discovery
+  namespace: default

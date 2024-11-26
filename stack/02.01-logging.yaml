@@ -1,0 +1,24 @@
+---
+apiVersion: nifi.stackable.tech/v1alpha1
+kind: NifiCluster
+metadata:
+  name: simple-nifi
+spec:
+  image:
+    productVersion: 2.0.0
+  clusterConfig:
+    vectorAggregatorConfigMapName: vector-aggregator-discovery
+    authentication:
+      - authenticationClass: simple-nifi-users
+    listenerClass: external-unstable
+    sensitiveProperties:
+      keySecret: nifi-sensitive-property-keyt
+      autoGenerate: true
+    zookeeperConfigMapName: simple-nifi-znode
+  nodes:
+    config:
+      logging:
+        enableVectorAgent: true
+    roleGroups:
+      default:
+        replicas: 1
