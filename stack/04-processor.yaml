@@ -1,0 +1,49 @@
+---
+apiVersion: nifi.stackable.tech/v1alpha1
+kind: NifiCluster
+metadata:
+  name: simple-nifi
+spec:
+  image:
+    productVersion: 2.0.0
+  clusterConfig:
+    vectorAggregatorConfigMapName: vector-aggregator-discovery
+    authentication:
+      - authenticationClass: simple-nifi-users
+    listenerClass: external-unstable
+    sensitiveProperties:
+      keySecret: nifi-sensitive-property-keyt
+      autoGenerate: true
+    zookeeperConfigMapName: simple-nifi-znode
+  nodes:
+    podOverrides:
+      spec:
+        containers:
+          - name: git-sync
+            image: registry.k8s.io/git-sync/git-sync:v4.2.3
+            args:
+              - --repo=https://github.com/stackabletech/nifi-talk
+              - --root=/processors
+              - --period=60s
+              - --link=/processors/head
+              - --max-failures=1000000000
+              - -v=2
+            volumeMounts:
+              - name: custom-processors
+                mountPath: /processors/
+          - name: nifi
+            volumeMounts:
+              - mountPath: /stackable/custom-processors
+                name: custom-processors
+        volumes:
+          - name: custom-processors
+            emptyDir: {}
+    configOverrides:
+      nifi.properties:
+        nifi.python.extensions.source.directory.stackable: /stackable/custom-processors/head/processors
+    config:
+      logging:
+        enableVectorAgent: true
+    roleGroups:
+      default:
+        replicas: 1
