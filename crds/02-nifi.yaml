@@ -1,0 +1,45 @@
+---
+apiVersion: zookeeper.stackable.tech/v1alpha1
+kind: ZookeeperZnode
+metadata:
+  name: simple-nifi-znode
+spec:
+  clusterRef:
+    name: simple-zk
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: simple-admin-credentials
+stringData:
+  admin: admin
+---
+apiVersion: authentication.stackable.tech/v1alpha1
+kind: AuthenticationClass
+metadata:
+  name: simple-nifi-users
+spec:
+  provider:
+    static:
+      userCredentialsSecret:
+        name: simple-admin-credentials
+---
+apiVersion: nifi.stackable.tech/v1alpha1
+kind: NifiCluster
+metadata:
+  name: simple-nifi
+spec:
+  image:
+    productVersion: 2.0.0
+  clusterConfig:
+    authentication:
+      - authenticationClass: simple-nifi-users
+    listenerClass: external-unstable
+    sensitiveProperties:
+      keySecret: nifi-sensitive-property-keyt
+      autoGenerate: true
+    zookeeperConfigMapName: simple-nifi-znode
+  nodes:
+    roleGroups:
+      default:
+        replicas: 1
